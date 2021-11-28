@@ -1,7 +1,13 @@
 import './App.css';
-import React, {useState, useRef} from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 
 const App = () => {
+
+    const ws = useRef(null);
+
+    useEffect(() => {
+        ws.current = new WebSocket('ws://localhost:8000/draw');
+    }, []);
 
     const [state, setState] = useState({
         mouseDown: false,
@@ -9,6 +15,18 @@ const App = () => {
     });
 
     const [color, setColor] = useState('black');
+    const [radius, setRadius] = useState(10);
+
+    const sendData = {
+        axis: state.pixelsArray,
+        radius: radius,
+        color: color
+    };
+
+    const send = () => {
+        ws.current.send(sendData);
+        console.log(sendData)
+    };
 
     const canvas = useRef(null);
 
@@ -30,7 +48,7 @@ const App = () => {
 
             const context = canvas.current.getContext('2d');
             context.beginPath();
-            context.arc(clientX - 13, clientY - 20, 10, 0, 2*Math.PI, false);
+            context.arc(clientX - 13, clientY - 20, radius, 0, 2 * Math.PI, false);
             context.fillStyle = color;
             context.fill();
         }
@@ -44,6 +62,7 @@ const App = () => {
 
     const mouseUpHandler = event => {
         setState({...state, mouseDown: false, pixelsArray: []});
+        send()
     };
 
     const colorSet = color => {
@@ -62,13 +81,19 @@ const App = () => {
                 onMouseUp={mouseUpHandler}
                 onMouseMove={canvasMouseMoveHandler}
             />
-            <div className="colors">
-                <div onClick={event => colorSet(event.target.className)} className="black"/>
-                <div onClick={event => colorSet(event.target.className)} className="white"/>
-                <div onClick={event => colorSet(event.target.className)} className="green"/>
-                <div onClick={event => colorSet(event.target.className)} className="blue"/>
-                <div onClick={event => colorSet(event.target.className)} className="red"/>
-                <div onClick={event => colorSet(event.target.className)} className="yellow"/>
+            <div className="container">
+                <div className="radius">
+                    <span>Radius <button onClick={() => setRadius(radius + 5)}>+</button> <button
+                        onClick={() => setRadius(radius - 5)}>-</button> <span>{radius}</span></span>
+                </div>
+                <div className="colors">
+                    <div onClick={event => colorSet(event.target.className)} className="black"/>
+                    <div onClick={event => colorSet(event.target.className)} className="white"/>
+                    <div onClick={event => colorSet(event.target.className)} className="green"/>
+                    <div onClick={event => colorSet(event.target.className)} className="blue"/>
+                    <div onClick={event => colorSet(event.target.className)} className="red"/>
+                    <div onClick={event => colorSet(event.target.className)} className="yellow"/>
+                </div>
             </div>
         </div>
     );

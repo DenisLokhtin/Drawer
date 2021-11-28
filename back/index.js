@@ -10,7 +10,7 @@ app.use(cors());
 
 const activeConnections = {};
 
-app.ws('/chat', function (ws, req) {
+app.ws('/draw', function (ws, req) {
     const id = nanoid(10);
     activeConnections[id] = ws;
 
