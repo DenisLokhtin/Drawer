@@ -17,12 +17,23 @@ app.ws('/draw', function (ws, req) {
     console.log(`Client connected! id=${id}`);
 
     ws.on('message', msg => {
-        ws.send(msg);
+        const message = JSON.parse(msg);
+
+        if (message.type === 'CREATE_MESSAGE') {
+            Object.keys(activeConnections).forEach(key => {
+                if (key !== id) {
+                    const connection = activeConnections[key];
+
+                    connection.send(JSON.stringify({type: 'NEW_MESSAGE', message}));
+                }
+            });
+        } else {
+            console.log('Unknown type', message.type)
+        }
     });
 
     ws.on('close', () => {
         console.log(`Client disconnected! id=${id}`);
-
         delete activeConnections[id];
     });
 });

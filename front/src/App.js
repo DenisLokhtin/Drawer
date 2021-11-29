@@ -4,31 +4,43 @@ import React, {useState, useRef, useEffect} from 'react';
 const App = () => {
 
     const ws = useRef(null);
-
-    useEffect(() => {
-        ws.current = new WebSocket('ws://localhost:8000/draw');
-    }, []);
+    const canvas = useRef(null);
 
     const [state, setState] = useState({
         mouseDown: false,
-        pixelsArray: []
+        color: 'black',
+        radius: 10,
     });
 
-    const [color, setColor] = useState('black');
-    const [radius, setRadius] = useState(10);
+    const [data, setData] = useState({
+        dataObj: [],
+        type: 'CREATE_MESSAGE'
+    });
 
-    const sendData = {
-        axis: state.pixelsArray,
-        radius: radius,
-        color: color
-    };
+    useEffect(() => {
+        ws.current = new WebSocket('ws://localhost:8000/draw');
+
+        ws.current.onmessage = event => {
+            let newData = JSON.parse(event.data)
+            console.log(newData.message.dataObj)
+
+            if (canvas !== null || newData || newData.message.dataObj.length !== 0) {
+                const context = canvas.current.getContext('2d');
+                newData.message.dataObj.map(info => {
+                    context.beginPath();
+                    context.arc(info.x - 13, info.y - 20, info.radius, 0, 2 * Math.PI, false);
+                    context.fillStyle = info.color;
+                    return (
+                        context.fill()
+                    )
+                });
+            }
+        };
+    }, []);
 
     const send = () => {
-        ws.current.send(sendData);
-        console.log(sendData)
+        ws.current.send(JSON.stringify(data));
     };
-
-    const canvas = useRef(null);
 
     const canvasMouseMoveHandler = event => {
         if (state.mouseDown) {
@@ -36,37 +48,38 @@ const App = () => {
             const clientX = event.clientX;
             const clientY = event.clientY;
 
-            setState(prevState => {
+            setData(prevState => {
                 return {
                     ...prevState,
-                    pixelsArray: [...prevState.pixelsArray, {
+                    dataObj: [...prevState.dataObj, {
                         x: clientX,
-                        y: clientY
+                        y: clientY,
+                        color: state.color,
+                        radius: state.radius
                     }]
-                };
+                }
+
             });
 
             const context = canvas.current.getContext('2d');
             context.beginPath();
-            context.arc(clientX - 13, clientY - 20, radius, 0, 2 * Math.PI, false);
-            context.fillStyle = color;
+            context.arc(clientX - 13, clientY - 20, state.radius, 0, 2 * Math.PI, false);
+            context.fillStyle = state.color;
             context.fill();
         }
     };
 
-
     const mouseDownHandler = event => {
         setState({...state, mouseDown: true});
     };
-
 
     const mouseUpHandler = event => {
         setState({...state, mouseDown: false, pixelsArray: []});
         send()
     };
 
-    const colorSet = color => {
-        setColor(color);
+    let colorSet = color => {
+        setState({...state, color: color});
     };
 
 
@@ -83,8 +96,12 @@ const App = () => {
             />
             <div className="container">
                 <div className="radius">
-                    <span>Radius <button onClick={() => setRadius(radius + 5)}>+</button> <button
-                        onClick={() => setRadius(radius - 5)}>-</button> <span>{radius}</span></span>
+                    <span>
+                        Radius
+                        <button onClick={() => setState({...state, radius: state.radius + 5})}>+</button>
+                        <button onClick={() => setState({...state, radius: state.radius - 5})}>-</button>
+                        <span>{state.radius}</span>
+                    </span>
                 </div>
                 <div className="colors">
                     <div onClick={event => colorSet(event.target.className)} className="black"/>
