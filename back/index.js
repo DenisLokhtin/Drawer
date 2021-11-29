@@ -10,6 +10,8 @@ app.use(cors());
 
 const activeConnections = {};
 
+const coords = [];
+
 app.ws('/draw', function (ws, req) {
     const id = nanoid(10);
     activeConnections[id] = ws;
@@ -19,12 +21,14 @@ app.ws('/draw', function (ws, req) {
     ws.on('message', msg => {
         const message = JSON.parse(msg);
 
+        let data = JSON.stringify({type: 'NEW_MESSAGE', message});
+        coords.push(data);
+
         if (message.type === 'CREATE_MESSAGE') {
             Object.keys(activeConnections).forEach(key => {
                 if (key !== id) {
                     const connection = activeConnections[key];
-
-                    connection.send(JSON.stringify({type: 'NEW_MESSAGE', message}));
+                    connection.send(data);
                 }
             });
         } else {
@@ -36,6 +40,9 @@ app.ws('/draw', function (ws, req) {
         console.log(`Client disconnected! id=${id}`);
         delete activeConnections[id];
     });
+    for (let i = 0; i < coords.length; i++) {
+        ws.send(coords[i]);
+    }
 });
 
 

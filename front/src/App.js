@@ -21,26 +21,21 @@ const App = () => {
         ws.current = new WebSocket('ws://localhost:8000/draw');
 
         ws.current.onmessage = event => {
-            let newData = JSON.parse(event.data)
-            console.log(newData.message.dataObj)
+            const newData = JSON.parse(event.data)
 
             if (canvas !== null || newData || newData.message.dataObj.length !== 0) {
+
                 const context = canvas.current.getContext('2d');
+
                 newData.message.dataObj.map(info => {
                     context.beginPath();
                     context.arc(info.x - 13, info.y - 20, info.radius, 0, 2 * Math.PI, false);
                     context.fillStyle = info.color;
-                    return (
-                        context.fill()
-                    )
+                    context.fill()
                 });
             }
         };
     }, []);
-
-    const send = () => {
-        ws.current.send(JSON.stringify(data));
-    };
 
     const canvasMouseMoveHandler = event => {
         if (state.mouseDown) {
@@ -66,6 +61,12 @@ const App = () => {
             context.arc(clientX - 13, clientY - 20, state.radius, 0, 2 * Math.PI, false);
             context.fillStyle = state.color;
             context.fill();
+        }
+    };
+
+    const send = () => {
+        if (ws) {
+            ws.current.send(JSON.stringify(data));
         }
     };
 
